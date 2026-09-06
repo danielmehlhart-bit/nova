@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 const dir = await mkdtemp(join(tmpdir(), 'nova-tests-'));
 for (const name of [
+  'journey',
   'design',
   'design-contract',
   'design-actions',
@@ -28,7 +29,7 @@ for (const name of [
       },
     })
     .outputText.replace(
-      /from ['"]\.\/(simulation|citizens|conversation|ai-contract|ai-actions|design|design-contract|design-actions)['"]/g,
+      /from ['"]\.\/(journey|simulation|citizens|conversation|ai-contract|ai-actions|design|design-contract|design-actions)['"]/g,
       "from './$1.mjs'",
     );
   await writeFile(join(dir, name + '.mjs'), compiled);
@@ -50,6 +51,8 @@ const { converse, autoBuild } = await import(
   pathToFileURL(join(dir, 'conversation.mjs'))
 );
 const { profile } = await import(pathToFileURL(join(dir, 'citizens.mjs')));
+const { journeyOf, journeyAction, reconcileJourney, journeyCommand, CHAPTERS } =
+  await import(pathToFileURL(join(dir, 'journey.mjs')));
 test.after(() => rm(dir, { recursive: true, force: true }));
 test('initial world has a valid persistent resident for every person', () => {
   const s = initialState();
@@ -508,4 +511,100 @@ test('model hex colors with missing prefix and short hex canonicalize safely', a
     assert.ok(validDesign(fitted));
     assert.equal(fitted.parts[0].color, expected);
   }
+});
+
+test('every invitation path creates a real, unique keepsake only after a valid gathering', () => {
+  for (const path of [0, 1])
+    for (const agreement of [0, 1]) {
+      let s = initialState();
+      for (let chapter = 0; chapter < CHAPTERS.length; chapter++) {
+        s = journeyAction(s, 'begin');
+        s = journeyAction(s, `path-${path}`);
+        assert.equal(journeyOf(s).phase, 'place');
+        assert.equal(journeyAction(s, 'host'), s);
+        const before = s;
+        const built = autoBuild(s, CHAPTERS[chapter].paths[path].kind, 1);
+        assert.equal(built.built, 1);
+        s = reconcileJourney(before, built.state);
+        assert.equal(journeyOf(s).phase, 'neighbor');
+        s = journeyAction(s, `agreement-${agreement}`);
+        s = journeyAction(s, 'host');
+        assert.equal(journeyOf(s).phase, 'celebration');
+        assert.equal(
+          s.moments.filter((m) => m.id === 'gathering-' + chapter).length,
+          1,
+        );
+        assert.equal(
+          journeyAction(s, 'host'),
+          s,
+          'repeated hosting cannot farm memories or trust',
+        );
+        assert.ok(
+          s.people[CHAPTERS[chapter].person].memories[0].includes('mayor'),
+        );
+        assert.ok(validSave(JSON.parse(JSON.stringify(s))));
+        s = journeyAction(s, 'next');
+      }
+      assert.equal(s.moments.length, 3);
+      assert.equal(journeyOf(s).chapter, 3);
+      assert.equal(journeyAction(s, 'next'), s);
+    }
+});
+test('existing venues, missing venues, undo and legacy saves remain playable', () => {
+  let s = initialState();
+  assert.equal(s.journey, undefined);
+  assert.ok(validSave(s));
+  s = journeyAction(journeyAction(s, 'begin'), 'path-0');
+  s = journeyAction(s, 'use');
+  assert.equal(s.tiles.length, 9, 'using an existing venue does not build');
+  s = journeyAction(s, 'agreement-0');
+  const venue = journeyOf(s).venue;
+  const removed = {
+    ...s,
+    tiles: s.tiles.filter((t) => t.x !== venue.x || t.y !== venue.y),
+  };
+  assert.equal(
+    journeyAction(removed, 'host'),
+    removed,
+    'stale venue cannot host',
+  );
+  const reconciled = reconcileJourney(s, removed);
+  assert.equal(journeyOf(reconciled).phase, 'place');
+  assert.equal(journeyOf(reconciled).agreement, undefined);
+  assert.ok(validSave(reconciled));
+  assert.equal(
+    validSave({ ...s, journey: { ...s.journey, chapter: 500 } }),
+    false,
+  );
+  assert.equal(
+    validSave({ ...s, moments: [{ id: 'fake', text: 'x'.repeat(10000) }] }),
+    false,
+  );
+});
+test('dream rewards persist once and survive the next simulation tick', () => {
+  let s = initialState();
+  s = {
+    ...s,
+    people: s.people.map((p) => (p.id === 0 ? { ...p, progress: 99.9 } : p)),
+  };
+  s = tick(s);
+  assert.equal(s.moments.filter((m) => m.id === 'dream-0-0').length, 1);
+  const after = tick(JSON.parse(JSON.stringify(s)));
+  assert.equal(after.moments.filter((m) => m.id === 'dream-0-0').length, 1);
+  assert.ok(validSave(after));
+});
+test('story voice commands respect phases and do not turn advice or negation into actions', () => {
+  let s = initialState();
+  assert.equal(journeyCommand(s, 'What should I do first?'), 'open');
+  assert.equal(journeyCommand(s, 'Host the gathering'), null);
+  assert.equal(journeyCommand(s, 'Do not start the story'), null);
+  s = journeyAction(s, 'begin');
+  assert.equal(journeyCommand(s, 'An open stage'), 'path-0');
+  assert.equal(journeyCommand(s, 'Would an open stage be a good idea?'), null);
+  s = journeyAction(s, 'path-0');
+  assert.equal(journeyCommand(s, 'Build my chosen place'), 'build');
+  s = journeyAction(s, 'use');
+  assert.equal(journeyCommand(s, 'Meet before sunset'), 'agreement-0');
+  s = journeyAction(s, 'agreement-0');
+  assert.equal(journeyCommand(s, 'Host the gathering'), 'host');
 });
