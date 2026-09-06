@@ -67,3 +67,27 @@ Deployment checks were performed on the maintainer’s private instance. Its acc
 - Updated the affected pinned React, Vinext, Vite and Cloudflare toolchain packages to available security fixes; npm audit reports zero known vulnerabilities at this snapshot. This is not a guarantee of vulnerability-free software.
 - All 23 deterministic tests, type checking, authored-code lint and the standalone production build pass without a Sites project.
 - Paid live tests are optional and were not repeated with maintainer credentials in the public checkout. Hosted AI/voice checks above refer to the separate private deployment.
+
+
+## Compact phone UI — 6 September 2026
+
+Real in-app-browser clickthrough against the updated game, with responsive viewport overrides.
+
+| Check | Result | Evidence / iteration |
+| --- | --- | --- |
+| 320 × 568, closed dock | PASS | Dock 111px, canvas 392px (69% of viewport); no horizontal page overflow. |
+| 390 × 844, closed dock | PASS | One-line reply plus Talk / Write / Menu; map remains visible. |
+| Menu → Build → close palette | PASS | Palette overlays the lower map; close returns to compact dock. |
+| Write while build palette open | FAIL → PASS | Opening Write now dismisses the palette, avoiding overlapping controls. |
+| Write → send local day/night command | PASS | Command executes, keyboard input closes and result remains in reply preview. |
+| Full conversation sheet | FAIL → PASS | Removed conflicting translate/width styles; sheet spans the phone width and scrolls. |
+| Continue conversation | FAIL → PASS | Scoped audio-button positioning; reply button no longer overlaps the title, and opens the focused input. |
+| Mobile reshape entry | FIXED | Reveals the composer before focusing it; retains the selected place and draft prompt. |
+| Menu → People → Mira → free question | PASS | Speaker changes, introduction and one short free question receive live AI replies. |
+| 390 × 420 available height | PASS | Composer and Send remain visible; this is a reduced-height test, not physical keyboard verification. |
+| 844 × 390 landscape | PASS | Dock 111px, no horizontal page overflow, map visible. |
+| 1365 × 900 desktop | PASS | Full composer and labeled city actions remain visible; phone controls hidden. |
+| Browser errors | PASS | No error-level messages in the tested session. |
+| Deterministic tests, lint, typecheck, build | PASS | 23 game tests and authored-code checks; production build succeeds. |
+
+Dependencies were updated to the tested public versions; npm audit reports zero known vulnerabilities at this run. Public source was compared byte-for-byte after upload. No API key, local environment file or private hosting metadata is included in that checkout. Physical iOS/Android microphone capture, native keyboard behavior and speech playback still require a handset test. The first guided resident story and objective card remain planned in NEXT.md.

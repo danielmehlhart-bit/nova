@@ -12,7 +12,7 @@ See CONTRIBUTING.md for the current scope and contribution workflow.
 
 The long-term vision is a participatory futures experiment with a playful city-building core. The immediate priority is much smaller: make NOVA enjoyable and understandable on phones. The creator is exploring the concept, not committing to building a large community platform now.
 
-An independently operated private prototype has been deployed. Live AI replies and hosted speech transcription have passed smoke tests. The current mobile UI still takes too much space, and the player lacks a clear first action, emotional attachment and an enjoyable progression loop. These are the next product problems to solve. English remains the primary game language; voice and touch/text must all work.
+An independently operated private prototype has been deployed. Live AI replies and hosted speech transcription have passed smoke tests. The compact mobile UI is implemented; the player still lacks a clear first action, emotional attachment and an enjoyable progression loop. These are the next product problems to solve. English remains the primary game language; voice and touch/text must all work.
 
 Priority order:
 1. Compact mobile interface: give the city most of the screen.
@@ -23,9 +23,11 @@ Priority order:
 
 This document records plans, not features already implemented. Preserve the working private game, existing saves and protected AI/voice setup. Do not interpret the future vision as an instruction to build every feature now. Publishing the source does not change access to the separately hosted prototype or configure paid services.
 
-## Next: a mobile interface that leaves room for the city
+## Mobile interface — first slice implemented; handset validation next
 
 Player report: the AURA/conversation area occupies nearly half of the smartphone screen. The city is difficult to see and interact with.
+
+Implemented on 6 September: a 111px collapsed Talk / Write / Menu dock, one-line reply preview, dismissible conversation sheet with a direct reply action, contextual build palette, preserved drafts, visible active/error states and larger touch targets. Responsive clickthrough passes at 320px and 390px, reduced height, landscape and desktop; see QA.md. A guided objective card, automatic story progression and physical handset validation are still pending.
 
 Proposed first implementation slice:
 - Collapse AURA into a narrow bottom dock with a large microphone action, a way to type, and an expandable conversation/menu control. Show at most one short reply preview while collapsed.

@@ -26,7 +26,7 @@ The lint script checks authored game code and tests. Generated Shadcn components
 
 ## Playing
 
-Tap the microphone and speak English, type an instruction, or open the building palette. Examples:
+On a phone, use Talk to speak English, Write to type, and Menu for Build, People, Council and Design. Tap the short reply to read the full conversation, then Continue conversation to answer. On desktop, the composer and city actions remain visible. Examples:
 
 - “Build two gardens near homes”
 - “Build three Cloudhomes”
