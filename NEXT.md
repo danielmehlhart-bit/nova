@@ -1,5 +1,21 @@
 # NOVA — next chapters
 
+## Current build: founding a community (6 September 2026)
+
+The newly authorized redesign is implemented as the default game. `NOVA-REDESIGN.md` records actual scope and deferred systems; `playtests/2026-09-06-founding.md` records the current test pass. Earlier roadmap sections below remain historical context and future work.
+
+- [x] Empty-land introduction, explicit mayor role, first housing and real arrivals.
+- [x] Flexible housing beyond the example camps/towers: custom size, privacy, setting, name and procedural courtyard shape; existing housing can adapt.
+- [x] Thirteen starting places, editable daily programmes and real neighborhood effects.
+- [x] Autonomous choices, friendships, resident-initiated circles, meetings, memories and voluntary relocation.
+- [x] Six chapters, evolving charter, citizen decisions with real votes and review cooldown, group-aware reports.
+- [x] Three.js scene with softened forms, animated resident bodies, map indicators, paths, day/night lighting and instanced rendering.
+- [x] Compact phone controls, shared voice/text, free AI using the actual new world context, separate legacy save, export/import/backup restoration.
+- [ ] Physical iPhone/Android microphone, GPU, keyboard and thermal testing; browser emulation cannot establish these.
+- [ ] Human opening-playtest: observe first action, emotional connection, one understood consequence, and desire to continue. Refine before increasing content volume.
+- [ ] Richer character assets/animations, interiors and pathfinding; multi-plot procedural designs.
+- [ ] Broader society simulation and public community constitution experiment, with persistent global cost budgets before public AI access.
+
 ## Open-source development
 
 Public repository: https://github.com/danielmehlhart-bit/nova

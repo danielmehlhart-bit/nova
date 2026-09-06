@@ -1,5 +1,10 @@
 # NOVA — browser clickthrough and fixes
 
+## New founding-community release
+
+The current default game was rebuilt around empty-land founding, autonomous resident life and Three.js. See [the new founding playtest](playtests/2026-09-06-founding.md) for the current pass/fail record and limitations. The prior prototype tests below remain regression history.
+
+
 Date: 2026-09-06. Target: the user's existing `http://localhost:3000/` tab in the Codex in-app browser. Tested with real browser clicks, typed input, keyboard actions, reloads, screenshots, accessibility/DOM checks and browser console inspection. Browser interactions used CUA; deterministic engine tests supplement the clickthrough.
 
 Viewports: existing desktop (approximately 1179×1210), 390×844, 320×568, and landscape 844×390. Temporary viewport overrides were reset at the end. These are responsive browser tests, not physical iPhone/Android testing.
