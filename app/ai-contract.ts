@@ -1,3 +1,4 @@
+import { spec, ACTIVITY, waterQuality } from './community';
 import { chapterOf, journeyOf } from './journey';
 import { designSchema, validDesign } from './design';
 import { validDesignRequest, type DesignRequest } from './design-contract';
@@ -64,15 +65,53 @@ export function contextFor(
   const p = speaker === 'aura' ? null : s.people[speaker];
   return {
     message,
-    sharedLife: JSON.stringify({
-      role: 'mayor',
-      chapter: chapterOf(s)?.title || 'Open city life',
-      phase: journeyOf(s).phase,
-      venue: journeyOf(s).venue || null,
-      latestMemories: (s.moments || [])
-        .slice(0, 3)
-        .map((m) => ({ title: m.title, text: m.text, day: m.day })),
-    }).slice(0, 3200),
+    sharedLife: JSON.stringify(
+      s.community
+        ? {
+            mode: 'founding-community',
+            role: 'founding mayor',
+            hour: s.community.clock % 24,
+            chapter: s.community.level + 1,
+            government: s.community.government,
+            quietHours: s.community.quietHours,
+            waterQuality: waterQuality(s),
+            residentLife: p ? s.community.lives[p.id] : null,
+            groups: s.community.groups.slice(-2).map((g) => ({
+              name: g.name,
+              activity: g.activity,
+              members: g.members.length,
+              meetings: g.meetings,
+            })),
+            recentEvents: s.community.events.slice(0, 2).map((e) => ({
+              title: e.title.slice(0, 100),
+              text: e.text.slice(0, 220),
+            })),
+            selectedPlace: selection
+              ? s.tiles
+                  .filter((t) => t.x === selection.x && t.y === selection.y)
+                  .map((t) => ({
+                    form: spec(t).form,
+                    name: spec(t).name,
+                    programmes: spec(t).programs,
+                  }))
+              : null,
+            places: s.tiles.slice(-3).map((t) => ({
+              name: spec(t).name,
+              programmes: spec(t).programs.map(
+                (p) => `${ACTIVITY[p.activity]} ${p.start}-${p.end}`,
+              ),
+            })),
+          }
+        : {
+            role: 'mayor',
+            chapter: chapterOf(s)?.title || 'Open city life',
+            phase: journeyOf(s).phase,
+            venue: journeyOf(s).venue || null,
+            latestMemories: (s.moments || [])
+              .slice(0, 3)
+              .map((m) => ({ title: m.title, text: m.text, day: m.day })),
+          },
+    ).slice(0, 3200),
     selected: selection
       ? s.tiles.find((t) => t.x === selection.x && t.y === selection.y) ||
         selection
@@ -85,18 +124,30 @@ export function contextFor(
         x: t.x,
         y: t.y,
         kind: t.kind,
-        name: t.design?.name || t.kind,
+        name: t.design?.name || t.place?.name || t.kind,
       })),
     city: {
       day: s.day,
       population: s.population,
       stats: s.stats,
       buildings: counts(s),
-      council: pendingEvent(s) >= 0 ? EVENTS[pendingEvent(s)].title : null,
+      council: s.community
+        ? null
+        : pendingEvent(s) >= 0
+          ? EVENTS[pendingEvent(s)].title
+          : null,
     },
     resident: p
       ? {
           ...residentProfile(p),
+          ...(s.community
+            ? {
+                activity:
+                  ACTIVITY[s.community.lives[p.id].activity] +
+                  ': ' +
+                  s.community.lives[p.id].reason,
+              }
+            : {}),
           id: p.id,
           progress: p.progress,
           trust: p.trust,

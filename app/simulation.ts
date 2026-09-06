@@ -1,4 +1,11 @@
 import {
+  communityTick,
+  validCommunity,
+  validPlace,
+  type Community,
+  type PlaceSpec,
+} from './community';
+import {
   dreamMoments,
   validJourney,
   validMoments,
@@ -25,6 +32,7 @@ export type Kind =
   | 'core';
 export type Metric = 'meaning' | 'connection' | 'freedom' | 'nature';
 export type Tile = {
+  place?: PlaceSpec;
   x: number;
   y: number;
   kind: Kind;
@@ -33,6 +41,7 @@ export type Tile = {
   designer?: number | 'aura';
 };
 export type State = {
+  community?: Community;
   version: 1;
   journey?: Journey;
   moments?: Moment[];
@@ -276,6 +285,7 @@ export function harmony(s: State) {
   return Math.round(METRICS.reduce((n, m) => n + s.stats[m.key], 0) / 4);
 }
 export function tick(s: State): State {
+  if (s.community) return communityTick(s);
   const t = targets(s),
     capacity = counts(s).home * 48;
   const population = Math.min(
@@ -310,7 +320,7 @@ export function place(
       message: 'That is the sea. Choose a place on the island.',
       ok: false,
     };
-  if (isRoad(x, y))
+  if (!s.community && isRoad(x, y))
     return {
       state: s,
       message: 'These paths stay open to everyone.',
@@ -498,6 +508,7 @@ export function validSave(v: unknown): v is State {
     const s = v as State;
     return (
       s.version === 1 &&
+      (s.community === undefined || validCommunity(s.community, s)) &&
       (s.journey === undefined || validJourney(s.journey)) &&
       (s.moments === undefined ||
         (validMoments(s.moments) &&
@@ -516,7 +527,8 @@ export function validSave(v: unknown): v is State {
           Number.isInteger(t.x) &&
           Number.isInteger(t.y) &&
           isLand(t.x, t.y) &&
-          !isRoad(t.x, t.y) &&
+          (!!s.community || !isRoad(t.x, t.y)) &&
+          (t.place === undefined || validPlace(t.place)) &&
           Object.hasOwn(BUILDINGS, t.kind) &&
           (t.design === undefined ||
             (t.kind !== 'core' && validDesign(t.design))) &&
@@ -529,7 +541,9 @@ export function validSave(v: unknown): v is State {
               t.designer < s.population)),
       ) &&
       new Set(s.tiles.map((t) => `${t.x},${t.y}`)).size === s.tiles.length &&
-      s.tiles.filter((t) => t.kind === 'core').length === 1 &&
+      (s.community
+        ? s.tiles.every((t) => t.kind !== 'core')
+        : s.tiles.filter((t) => t.kind === 'core').length === 1) &&
       METRICS.every(
         (m) =>
           Number.isFinite(s.stats?.[m.key]) &&

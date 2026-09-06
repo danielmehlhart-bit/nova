@@ -1,4 +1,5 @@
 'use client';
+import FoundingGame from './FoundingGame';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
@@ -119,6 +120,19 @@ function appendConversation(message: Message) {
   return (messages: Message[]) => [...messages.slice(-29), message];
 }
 export default function Home() {
+  const [legacy, setLegacy] = useState(false);
+  return legacy ? (
+    <>
+      <button className="return-to-community" onClick={() => setLegacy(false)}>
+        Return to the new NOVA
+      </button>
+      <LegacyCity />
+    </>
+  ) : (
+    <FoundingGame onLegacy={() => setLegacy(true)} />
+  );
+}
+function LegacyCity() {
   const [aiReady, setAiReady] = useState(false),
     [thinking, setThinking] = useState(false),
     [aiError, setAiError] = useState(''),
