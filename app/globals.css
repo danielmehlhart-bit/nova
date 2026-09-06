@@ -1609,7 +1609,7 @@ button:active {
   line-height: 1.6;
   margin: 8px 0 0;
 }
-.conversation-history button {
+.conversation-history > div button {
   border: 0;
   background: transparent;
   color: #a6c18f;
@@ -2459,5 +2459,165 @@ button:active {
   }
   .council-alert {
     bottom: 68px;
+  }
+}
+
+/* On phones, keep the city in view and reveal controls when needed. */
+.mobile-dock-button,
+.mobile-control-label {
+  display: none;
+}
+@media (max-width: 700px), (max-height: 560px) and (orientation: landscape) {
+  .game {
+    height: 100dvh;
+    min-height: 0;
+  }
+  .conversation-dock {
+    padding: 6px 10px max(8px, env(safe-area-inset-bottom));
+  }
+  .conversation-row {
+    gap: 8px;
+    margin-bottom: 4px;
+    min-height: 44px;
+  }
+  .speaker-badge {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .speaker-badge > span:nth-child(2) {
+    display: block;
+    font-size: 11px;
+  }
+  .speaker-badge small,
+  .speaker-badge > svg {
+    display: none;
+  }
+  .reply-preview {
+    min-height: 44px;
+    padding: 0;
+  }
+  .reply-preview p {
+    font-size: 13px;
+    -webkit-line-clamp: 1;
+  }
+  .audio-toggle {
+    min-width: 44px;
+    height: 44px;
+  }
+  .composer {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .composer form,
+  .dock-actions,
+  .composer-meta,
+  .suggestions {
+    display: none;
+  }
+  .mobile-dock-button,
+  .mic-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    height: 48px;
+    min-width: 44px;
+    flex: 1;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+  .mobile-dock-button {
+    position: relative;
+    border: 1px solid #c4dca32e;
+    background: #214538;
+    color: #dbe8ce;
+  }
+  .mobile-control-label {
+    display: inline;
+  }
+  .menu-notification {
+    width: 6px;
+    height: 6px;
+    background: #f0b77f;
+    border-radius: 50%;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+  .writing-open .composer form {
+    display: flex;
+    order: -1;
+    flex: 0 0 100%;
+    height: 48px;
+  }
+  .composer .send-button {
+    min-width: 44px;
+    height: 44px;
+  }
+  .menu-open .dock-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 10px;
+    width: min(300px, calc(100vw - 20px));
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #b7ce9e4a;
+    border-radius: 18px;
+    background: #16362f;
+    box-shadow: 0 12px 40px #071c2280;
+  }
+  .dock-actions button {
+    min-height: 48px;
+    padding: 10px;
+  }
+  .dock-actions button span {
+    display: inline;
+  }
+  .composer-meta.active-status {
+    display: flex;
+    padding-left: 0;
+    margin-top: 6px;
+    font-size: 11px;
+  }
+  .build-dock {
+    position: absolute;
+    z-index: 4;
+    bottom: calc(112px + env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+    max-height: min(210px, 40dvh);
+    overflow-y: auto;
+    box-shadow: 0 -8px 30px #071c2240;
+  }
+  .world-controls button {
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (max-width: 700px) {
+  .nova-dialog.history-dialog {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 72dvh;
+    transform: none;
+    translate: none;
+    border-radius: 22px 22px 0 0 !important;
+    padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
+  }
+  .conversation-history .primary-action {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px;
+    border: 1px solid #c4dca32e;
+    border-radius: 12px;
+    color: #e5efd7;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
   }
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   Infinity as InfinityIcon,
   Sparkles,
@@ -32,6 +33,8 @@ import {
   CircleHelp,
   Check,
   ChevronDown,
+  Keyboard,
+  Menu,
   RotateCcw,
 } from 'lucide-react';
 import {
@@ -119,6 +122,8 @@ export default function Home() {
     [modal, setModal] = useState<Modal>(null),
     [resetOpen, setResetOpen] = useState(false),
     [showBuild, setShowBuild] = useState(false),
+    [mobileWriting, setMobileWriting] = useState(false),
+    [mobileMenu, setMobileMenu] = useState(false),
     [speaker, setSpeaker] = useState<Speaker>('aura'),
     [input, setInput] = useState(''),
     [search, setSearch] = useState(''),
@@ -482,6 +487,8 @@ export default function Home() {
       if (e.key === 'Escape') {
         setTool('inspect');
         setFocusTile(null);
+        setMobileWriting(false);
+        setMobileMenu(false);
       }
       const n = Number(e.key);
       if (n >= 1 && n <= 8) {
@@ -838,6 +845,11 @@ export default function Home() {
                   setSpeaker('aura');
                   speakerRef.current = 'aura';
                   setInput('Redesign this place as ');
+                  flushSync(() => {
+                    setMobileWriting(true);
+                    setMobileMenu(false);
+                    setShowBuild(false);
+                  });
                   inputRef.current?.focus();
                 }}
               >
@@ -869,7 +881,10 @@ export default function Home() {
               : 'Drag to explore · Pinch or scroll to zoom'}
         </div>
       </section>
-      <section className="conversation-dock" aria-label="Talk to the city">
+      <section
+        className={`conversation-dock${mobileWriting ? ' writing-open' : ''}${mobileMenu ? ' menu-open' : ''}`}
+        aria-label="Talk to the city"
+      >
         <div className="conversation-row">
           <button
             className="speaker-badge"
@@ -950,11 +965,22 @@ export default function Home() {
             ) : (
               <Mic />
             )}
+            <span className="mobile-control-label">
+              {voice.listening
+                ? 'Finish'
+                : voice.transcribing
+                  ? 'Transcribing…'
+                  : 'Talk'}
+            </span>
           </button>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               voice.stop();
+              if (input.trim()) {
+                setMobileWriting(false);
+                inputRef.current?.blur();
+              }
               void submit(input);
             }}
           >
@@ -991,24 +1017,69 @@ export default function Home() {
               <Send size={19} />
             </button>
           </form>
-          <div className="dock-actions">
+          <button
+            className="mobile-dock-button"
+            aria-label={
+              mobileWriting ? 'Close keyboard' : 'Type an instruction'
+            }
+            aria-expanded={mobileWriting}
+            aria-controls="instruction"
+            onClick={() => {
+              setMobileMenu(false);
+              setShowBuild(false);
+              flushSync(() => setMobileWriting(!mobileWriting));
+              if (!mobileWriting) inputRef.current?.focus();
+              else inputRef.current?.blur();
+            }}
+          >
+            {mobileWriting ? <X /> : <Keyboard />}
+            <span>{mobileWriting ? 'Done' : 'Write'}</span>
+          </button>
+          <button
+            className="mobile-dock-button"
+            aria-label={mobileMenu ? 'Close city menu' : 'Open city menu'}
+            aria-expanded={mobileMenu}
+            aria-controls="city-actions"
+            onClick={() => {
+              setMobileWriting(false);
+              setShowBuild(false);
+              setMobileMenu(!mobileMenu);
+            }}
+          >
+            {mobileMenu ? <X /> : <Menu />}
+            <span>Menu</span>
+            {event >= 0 && <i className="menu-notification" />}
+          </button>
+          <div className="dock-actions" id="city-actions">
             <button
               aria-label="Build"
               className={showBuild ? 'active' : ''}
-              onClick={() => setShowBuild(!showBuild)}
+              onClick={() => {
+                setShowBuild(!showBuild);
+                setMobileMenu(false);
+              }}
               aria-expanded={showBuild}
             >
               <Building2 />
               <span>Build</span>
             </button>
-            <button aria-label="People" onClick={() => setModal('people')}>
+            <button
+              aria-label="People"
+              onClick={() => {
+                setModal('people');
+                setMobileMenu(false);
+              }}
+            >
               <Users />
               <span>People</span>
             </button>
             <button
               aria-label="Council"
               className={event >= 0 ? 'has-event' : ''}
-              onClick={() => setModal('council')}
+              onClick={() => {
+                setModal('council');
+                setMobileMenu(false);
+              }}
             >
               <Orbit />
               <span>Council</span>
@@ -1016,7 +1087,10 @@ export default function Home() {
             <button
               disabled={thinking}
               aria-label="Design"
-              onClick={() => setModal('design')}
+              onClick={() => {
+                setModal('design');
+                setMobileMenu(false);
+              }}
               className={state.designProposal ? 'has-event' : ''}
             >
               <Palette />
@@ -1024,7 +1098,9 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <div className="composer-meta">
+        <output
+          className={`composer-meta${voice.error || aiError || thinking || voice.transcribing || voice.listening ? ' active-status' : ''}`}
+        >
           <span>
             {voice.error ||
               aiError ||
@@ -1043,7 +1119,7 @@ export default function Home() {
                           : 'Local mode · AI server is not connected yet')}
           </span>
           <span className="save-status">{saveStatus}</span>
-        </div>
+        </output>
         {!showBuild && (
           <div className="suggestions">
             {(speaker === 'aura'
@@ -1142,8 +1218,14 @@ export default function Home() {
         }}
       >
         <DialogContent
+          finalFocus={mobileWriting ? inputRef : undefined}
           className={
-            'nova-dialog ' + (modal === 'people' ? 'people-dialog' : '')
+            'nova-dialog ' +
+            (modal === 'people'
+              ? 'people-dialog'
+              : modal === 'history'
+                ? 'history-dialog'
+                : '')
           }
         >
           <DialogHeader>
@@ -1531,6 +1613,20 @@ export default function Home() {
                   )}
                 </div>
               ))}
+              <button
+                className="primary-action"
+                onClick={() => {
+                  flushSync(() => {
+                    setModal(null);
+                    setMobileWriting(true);
+                    setShowBuild(false);
+                    setMobileMenu(false);
+                  });
+                  inputRef.current?.focus();
+                }}
+              >
+                Continue conversation <MessageCircle size={16} />
+              </button>
             </div>
           )}
           {modal === 'story' && (
