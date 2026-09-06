@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 const dir = await mkdtemp(join(tmpdir(), 'nova-tests-'));
 for (const name of [
+  'community',
   'journey',
   'design',
   'design-contract',
@@ -29,7 +30,7 @@ for (const name of [
       },
     })
     .outputText.replace(
-      /from ['"]\.\/(journey|simulation|citizens|conversation|ai-contract|ai-actions|design|design-contract|design-actions)['"]/g,
+      /from ['"]\.\/(community|journey|simulation|citizens|conversation|ai-contract|ai-actions|design|design-contract|design-actions)['"]/g,
       "from './$1.mjs'",
     );
   await writeFile(join(dir, name + '.mjs'), compiled);
@@ -607,4 +608,196 @@ test('story voice commands respect phases and do not turn advice or negation int
   assert.equal(journeyCommand(s, 'Meet before sunset'), 'agreement-0');
   s = journeyAction(s, 'agreement-0');
   assert.equal(journeyCommand(s, 'Host the gathering'), 'host');
+});
+
+const community = await import(pathToFileURL(join(dir, 'community.mjs')));
+const startCommunity = () => {
+  const s = community.foundingState();
+  s.community.started = true;
+  return s;
+};
+const runHours = (s, hours) => {
+  for (let i = 0; i < hours; i++) {
+    s = community.communityTick(s);
+    assert.ok(validSave(s), `Invalid community at hour ${s.community.clock}`);
+  }
+  return s;
+};
+test('new community starts empty and residents arrive only when homes exist', () => {
+  let s = community.foundingState();
+  assert.equal(s.tiles.length, 0);
+  assert.equal(s.population, 0);
+  assert.ok(validSave(s));
+  assert.equal(community.communityTick(s), s);
+  s.community.started = true;
+  s = runHours(s, 20);
+  assert.equal(s.population, 0);
+  s = community.putPlace(s, community.PLACES.camp, { x: 8, y: 8 }).state;
+  assert.ok(validSave(s));
+  s = runHours(s, 30);
+  assert.equal(s.population, 12);
+  assert.equal(s.community.lives.length, 12);
+  assert.ok(s.community.events.some((e) => e.id === 'arrival'));
+});
+test('housing choices change individual experience and buildings cannot displace residents', () => {
+  let camp = community.putPlace(startCommunity(), community.PLACES.camp).state;
+  camp = runHours(camp, 60);
+  let cabins = community.putPlace(
+    startCommunity(),
+    community.PLACES.woodland,
+  ).state;
+  cabins = runHours(cabins, 60);
+  assert.ok(
+    cabins.community.lives[2].comfort > camp.community.lives[2].comfort,
+  );
+  const removed = community.removePlace(camp, community.tileKey(camp.tiles[0]));
+  assert.equal(removed.state, camp);
+  const more = community.putPlace(camp, community.PLACES.cottage).state;
+  assert.notEqual(
+    community.removePlace(more, community.tileKey(more.tiles[0])).state,
+    more,
+  );
+});
+test('shared encounters create autonomous circles and real remembered meetings', () => {
+  let s = startCommunity();
+  for (const f of [
+    'camp',
+    'cottage',
+    'pavilion',
+    'workshop',
+    'pool',
+    'sanctuary',
+    'garden',
+    'learning',
+  ])
+    s = community.putPlace(s, community.PLACES[f]).state;
+  s = runHours(s, 180);
+  assert.ok(s.community.groups.length > 0);
+  assert.ok(s.community.groups.some((g) => g.meetings > 0));
+  assert.ok(s.people.some((p) => p.memories.length > 0));
+  assert.ok(s.community.lives.some((l) => l.friends.length > 0));
+  assert.ok(s.community.groups.every((g) => g.members.length < s.population));
+  const other = runHours(structuredClone(s), 30),
+    same = runHours(structuredClone(s), 30);
+  assert.deepEqual(other, same);
+});
+test('pool programmes, quiet hours and ecological restoration have real effects', () => {
+  const pool = community.parsePlace(
+    'a swimming pool that becomes a disco after 18',
+  );
+  assert.equal(pool.form, 'pool');
+  assert.deepEqual(pool.programs, [
+    { activity: 'swim', start: 8, end: 18 },
+    { activity: 'dance', start: 18, end: 24 },
+  ]);
+  assert.ok(community.validPlace(pool));
+  assert.equal(community.validPlace({ ...pool, form: '__proto__' }), false);
+  let s = startCommunity();
+  s = community.putPlace(s, community.PLACES.tower).state;
+  s = community.putPlace(s, pool).state;
+  s = runHours(s, 80);
+  assert.ok(community.waterQuality(s) < 100);
+  const wet = community.putPlace(s, community.PLACES.wetland).state;
+  assert.ok(community.waterQuality(wet) > community.waterQuality(s));
+  const q = community.civicDecision(s, 'quiet');
+  assert.equal(q.community.quietHours, true);
+  assert.ok(validSave(q));
+});
+test('invalid new save fields are rejected while legacy saves remain valid', () => {
+  const s = community.putPlace(startCommunity(), community.PLACES.camp).state;
+  assert.ok(validSave(s));
+  assert.equal(
+    validSave({
+      ...s,
+      tiles: [
+        { ...s.tiles[0], place: { ...s.tiles[0].place, capacity: Infinity } },
+      ],
+    }),
+    false,
+  );
+  assert.equal(
+    validSave({ ...s, community: { ...s.community, groups: [{ id: 'bad' }] } }),
+    false,
+  );
+  assert.ok(validSave(initialState()));
+});
+
+test('citizen decisions count real ballots, can fail, and cannot farm trust', () => {
+  let s = runHours(
+    community.putPlace(startCommunity(), community.PLACES.camp).state,
+    30,
+  );
+  s = community.setGovernment(s, 'assembly');
+  const failed = community.civicDecision(s, 'late');
+  assert.match(failed.community.rules[0].text, /not adopted/);
+  assert.equal(community.civicDecision(failed, 'quiet'), failed);
+  const c = structuredClone(s);
+  c.community.government = 'circles';
+  c.community.groups = [
+    {
+      id: 'test-circle',
+      name: 'A quiet circle',
+      activity: 'reflect',
+      founder: 1,
+      members: [1, 2, 4, 5],
+      venue: 144,
+      meetings: 1,
+      lastMeeting: 1,
+    },
+  ];
+  const decision = community.civicDecision(c, 'quiet');
+  assert.match(decision.community.rules[0].text, /\/9 supported/);
+  assert.ok(validSave(decision));
+});
+test('programme edge cases remain valid and named reflection houses are not homes', () => {
+  assert.equal(community.parsePlace('House of reflection').form, 'sanctuary');
+  assert.equal(community.parsePlace('Discovery house').form, 'learning');
+  for (const h of ['0', '7', '12 am', '12 pm', '23'])
+    assert.ok(
+      community.validPlace(community.parsePlace('pool with disco after ' + h)),
+    );
+});
+test('residents can independently move to available homes that better fit their needs', () => {
+  let s = runHours(
+    community.putPlace(startCommunity(), community.PLACES.camp).state,
+    70,
+  );
+  const old = s.community.lives[1].home;
+  s = community.putPlace(s, community.PLACES.cottage).state;
+  s = runHours(s, 30);
+  assert.notEqual(s.community.lives[1].home, old);
+  assert.ok(s.community.events.some((e) => e.id.startsWith('move-')));
+});
+test('founding AI context names real places and contains parseable bounded community facts', () => {
+  let s = startCommunity();
+  for (const f of [
+    'camp',
+    'cottage',
+    'pavilion',
+    'workshop',
+    'pool',
+    'sanctuary',
+    'garden',
+    'learning',
+  ])
+    s = community.putPlace(s, community.PLACES[f]).state;
+  s = runHours(s, 200);
+  const c = contextFor(s, 'How are you feeling?', 0, [], { x: 8, y: 8 });
+  assert.ok(validAIContext(c));
+  assert.equal(JSON.parse(c.sharedLife).mode, 'founding-community');
+  assert.ok(c.places.some((p) => p.name === 'Meadow campsite'));
+  assert.equal(c.city.council, null);
+});
+
+test('free housing descriptions support sizes between the starting examples', () => {
+  const q = community.parsePlace(
+    'Build a co-living courtyard for 20 people with private rooms',
+  );
+  assert.equal(q.form, 'customhome');
+  assert.equal(q.capacity, 20);
+  assert.equal(q.privacy, 90);
+  assert.ok(community.validPlace(q));
+  const s = runHours(community.putPlace(startCommunity(), q).state, 40);
+  assert.equal(s.population, 20);
+  assert.ok(validSave(s));
 });
