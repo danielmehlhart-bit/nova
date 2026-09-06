@@ -2621,3 +2621,392 @@ button:active {
     gap: 10px;
   }
 }
+
+/* Personal invitations give the mayor a reason to shape the city. */
+.mayor-brief {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  width: 300px;
+  z-index: 2;
+  padding: 18px;
+  border: 1px solid #d6e5ba35;
+  border-radius: 20px;
+  background: #16382fed;
+  box-shadow: 0 8px 32px #0c283533;
+}
+.mayor-brief .eyebrow {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #b4caaa;
+}
+.mayor-brief h2 {
+  font:
+    25px/1.15 Georgia,
+    serif;
+  color: #eef4db;
+  margin: 10px 0;
+}
+.mayor-brief p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 12px;
+  color: #bad0b2;
+}
+.brief-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #d8edb3;
+  color: #244637;
+  font-size: 14px;
+}
+.brief-memories {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 0 0;
+  border: 0;
+  background: transparent;
+  color: #a6bca4;
+  text-align: left;
+  font-size: 12px;
+}
+.brief-memories svg {
+  flex-shrink: 0;
+}
+.brief-memories.unread {
+  color: #ffd59e;
+}
+.next-city-goal {
+  padding-top: 10px;
+  border-top: 1px solid #d6e5ba25;
+  margin-top: 10px;
+  color: #cdddbc;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.next-city-goal p {
+  margin: 5px 0;
+}
+.next-city-goal span {
+  color: #f6cf9e;
+}
+.city-panel {
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.journey-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.journey-body p,
+.moments-book p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #d3dfc7;
+}
+.journey-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.journey-person > span {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #294638;
+  font-size: 14px;
+}
+.journey-person b {
+  display: block;
+  font-size: 16px;
+}
+.journey-person small {
+  display: block;
+  font-size: 12px;
+  color: #aac1a0;
+  margin-top: 3px;
+}
+.journey-body blockquote {
+  margin: 0;
+  padding-left: 16px;
+  border-left: 2px solid #edc38e;
+  color: #e8e9cc;
+  font:
+    21px/1.5 Georgia,
+    serif;
+}
+.journey-body .primary-action,
+.moments-book .primary-action {
+  width: 100%;
+  justify-content: space-between;
+  min-height: 48px;
+  font-size: 15px;
+}
+.secondary-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  min-height: 44px;
+  border: 1px solid #c4dca345;
+  border-radius: 12px;
+  background: #254b3e;
+  color: #e4eccf;
+  font-size: 14px;
+}
+.journey-link {
+  border: 0;
+  background: transparent;
+  color: #b8ccad;
+  padding: 10px 0;
+  min-height: 44px;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.journey-hint {
+  color: #a3ba9d;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.journey-choices {
+  display: grid;
+  gap: 12px;
+}
+.journey-choices button {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  text-align: left;
+  padding: 18px;
+  border: 1px solid #c5dca03e;
+  border-radius: 16px;
+  background: #284a39;
+  color: #e9edcf;
+}
+.journey-choices button:hover {
+  border-color: #d8edb3;
+  background: #34533f;
+}
+.journey-choices b {
+  font-size: 17px;
+  padding-right: 20px;
+}
+.journey-choices span {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #bed0b3;
+}
+.journey-choices small {
+  font-size: 12px;
+  color: #9fb698;
+}
+.journey-choices svg {
+  position: absolute;
+  right: 14px;
+  top: 18px;
+}
+.invitation-ticket {
+  padding: 22px;
+  border: 1px dashed #d9dcad80;
+  border-radius: 18px;
+  background: #294d3c;
+}
+.invitation-ticket small,
+.memory-reward > small {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: #d0dab3;
+}
+.invitation-ticket h3,
+.memory-reward h3 {
+  font:
+    28px/1.2 Georgia,
+    serif;
+  margin: 12px 0;
+}
+.invitation-ticket p {
+  margin: 10px 0;
+}
+.invitation-ticket > span {
+  display: block;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #adbea1;
+}
+.memory-reward {
+  padding: 22px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #37503a, #233e36);
+  border: 1px solid #e9d59560;
+}
+.memory-star {
+  display: block;
+  color: #f1d99c;
+  font-size: 48px;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+.memory-reward blockquote {
+  margin: 18px 0;
+  font-size: 19px;
+}
+.memory-reward > span:last-child {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: #bdcda6;
+}
+.motif-control {
+  display: grid;
+  gap: 8px;
+}
+.motif-control small {
+  text-align: center;
+  color: #a8b99e;
+  font-size: 12px;
+}
+.keepsake-list p {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+}
+.moments-book {
+  display: grid;
+  gap: 18px;
+}
+.moments-book article {
+  border: 1px solid #c5dca030;
+  border-radius: 16px;
+  padding: 18px;
+  background: #244636;
+}
+.moments-book article > small {
+  font-size: 11px;
+  color: #b6c7a3;
+  letter-spacing: 1px;
+}
+.moments-book article h3 {
+  font:
+    23px/1.25 Georgia,
+    serif;
+  margin: 10px 0;
+}
+.moments-book .secondary-action {
+  width: 100%;
+  margin-top: 12px;
+}
+.dock-actions button[aria-label='Your next invitation'],
+.dock-actions button[aria-label='City memories'] {
+  display: none;
+}
+@media (max-width: 700px), (max-height: 560px) and (orientation: landscape) {
+  .mayor-brief {
+    top: 10px;
+    left: 10px;
+    width: min(310px, calc(100% - 20px));
+    padding: 12px;
+    border-radius: 16px;
+  }
+  .mayor-brief .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.7px;
+  }
+  .mayor-brief h2 {
+    font-size: 21px;
+    margin: 7px 0;
+  }
+  .mayor-brief p {
+    display: none;
+  }
+  .brief-memories {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .mobile-stats {
+    top: auto;
+    bottom: 28px;
+    right: 12px;
+  }
+  .city-panel {
+    display: none;
+  }
+  .dock-actions button[aria-label='Your next invitation'],
+  .dock-actions button[aria-label='City memories'] {
+    display: flex;
+  }
+  .council-alert {
+    bottom: 86px;
+    max-width: calc(100% - 100px);
+  }
+  .status-message {
+    top: 162px;
+  }
+  .journey-body blockquote {
+    font-size: 19px;
+  }
+}
+@media (max-height: 500px) {
+  .mayor-brief {
+    width: 240px;
+  }
+  .brief-memories {
+    display: none;
+  }
+  .mayor-brief h2 {
+    font-size: 18px;
+  }
+}
+
+.journey-voice {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.journey-voice p {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.75;
+  margin: 8px 0 0;
+}
+@media (min-width: 701px) and (min-height: 561px) {
+  .world-controls {
+    top: auto;
+    bottom: 20px;
+    left: 24px;
+    flex-direction: row;
+  }
+  .coordinate {
+    bottom: 80px;
+  }
+  .mayor-brief .eyebrow {
+    letter-spacing: 0.6px;
+    font-size: 9px;
+  }
+}
+.city-panel {
+  scrollbar-width: thin;
+  scrollbar-color: #4c7053 transparent;
+}

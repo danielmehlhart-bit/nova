@@ -1,3 +1,4 @@
+import { chapterOf, journeyOf } from './journey';
 import { designSchema, validDesign } from './design';
 import { validDesignRequest, type DesignRequest } from './design-contract';
 import {
@@ -24,6 +25,7 @@ export type AIReply = {
 };
 export type AIContext = {
   message: string;
+  sharedLife?: string;
   selected?: State['tiles'][number] | { x: number; y: number } | null;
   pendingDesign?: DesignRequest | null;
   places?: { x: number; y: number; kind: Kind; name: string }[];
@@ -62,6 +64,15 @@ export function contextFor(
   const p = speaker === 'aura' ? null : s.people[speaker];
   return {
     message,
+    sharedLife: JSON.stringify({
+      role: 'mayor',
+      chapter: chapterOf(s)?.title || 'Open city life',
+      phase: journeyOf(s).phase,
+      venue: journeyOf(s).venue || null,
+      latestMemories: (s.moments || [])
+        .slice(0, 3)
+        .map((m) => ({ title: m.title, text: m.text, day: m.day })),
+    }).slice(0, 3200),
     selected: selection
       ? s.tiles.find((t) => t.x === selection.x && t.y === selection.y) ||
         selection
@@ -111,6 +122,7 @@ export function validAIContext(input: unknown): input is AIContext {
     return (
       !!v &&
       str(v.message, 600) &&
+      (v.sharedLife === undefined || str(v.sharedLife, 3200)) &&
       (v.pendingDesign == null || validDesignRequest(v.pendingDesign)) &&
       (v.selected == null ||
         (Number.isInteger(v.selected.x) &&

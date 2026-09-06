@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { geometry, shadeColor } from './design';
+import { chapterOf, journeyOf, venueExists } from './journey';
 import {
   BUILDINGS,
   isLand,
@@ -554,6 +555,55 @@ export default function CityCanvas(props: Props) {
           '#bdddd2',
           1,
         );
+      }
+      // A named gathering marks a real story event at its saved venue.
+      const journey = journeyOf(p.state),
+        chapter = chapterOf(p.state);
+      if (journey.venue && venueExists(p.state) && chapter) {
+        const v = journey.venue,
+          gathering = journey.phase === 'celebration';
+        const point = iso(v.x + 0.5, v.y + 0.5, 12);
+        ellipse(
+          point,
+          24,
+          12,
+          '#00000000',
+          gathering ? '#f6dca0' : '#d6edb366',
+        );
+        if (gathering) {
+          for (let guest = 0; guest < 7; guest++) {
+            const angle =
+              (guest * Math.PI * 2) / 7 +
+              (reduced ? 0 : Math.sin(t * 0.4) * 0.04);
+            const a = iso(
+              v.x + 0.5 + Math.cos(angle) * 0.44,
+              v.y + 0.5 + Math.sin(angle) * 0.44,
+              13,
+            );
+            line(
+              a,
+              { x: a.x, y: a.y - 5 * scale },
+              ['#ffd79c', '#d1bbef', '#b7e2d3'][guest % 3],
+              2.4,
+            );
+          }
+        }
+        const label = gathering
+          ? [
+              'Mira’s first listening',
+              'Juno’s shared table',
+              'Ada’s sky watch',
+            ][journey.chapter]
+          : 'A place for ' + ['Mira', 'Juno', 'Ada'][journey.chapter];
+        const a = iso(v.x + 0.5, v.y + 0.5, BUILDINGS[v.kind].height + 32);
+        c.font = '12px Arial';
+        const labelWidth = c.measureText(label).width + 20;
+        c.fillStyle = '#173a32ed';
+        c.fillRect(a.x - labelWidth / 2, a.y - 14, labelWidth, 24);
+        c.fillStyle = '#f4e5be';
+        c.textAlign = 'center';
+        c.fillText(label, a.x, a.y + 2);
+        c.textAlign = 'left';
       }
       // A quiet orbital ring marks the core without obscuring building interaction.
       const cp = iso(7.5, 7.5, 112);

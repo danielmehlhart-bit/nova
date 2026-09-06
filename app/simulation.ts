@@ -1,3 +1,10 @@
+import {
+  dreamMoments,
+  validJourney,
+  validMoments,
+  type Journey,
+  type Moment,
+} from './journey';
 import { validDesign, type Design } from './design';
 import {
   PURPOSES,
@@ -27,6 +34,8 @@ export type Tile = {
 };
 export type State = {
   version: 1;
+  journey?: Journey;
+  moments?: Moment[];
   designProposal?: DesignProposal;
   day: number;
   population: number;
@@ -287,7 +296,7 @@ export function tick(s: State): State {
     next.stats[m.key] = clamp(
       s.stats[m.key] + (t[m.key] - s.stats[m.key]) * 0.18,
     );
-  return next;
+  return dreamMoments(s, next);
 }
 export function place(
   s: State,
@@ -489,6 +498,10 @@ export function validSave(v: unknown): v is State {
     const s = v as State;
     return (
       s.version === 1 &&
+      (s.journey === undefined || validJourney(s.journey)) &&
+      (s.moments === undefined ||
+        (validMoments(s.moments) &&
+          s.moments.every((m) => m.person < s.population))) &&
       (s.designProposal === undefined || validProposal(s.designProposal)) &&
       Number.isInteger(s.day) &&
       s.day >= 1 &&

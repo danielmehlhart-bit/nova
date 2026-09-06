@@ -4,6 +4,7 @@ import { flushSync } from 'react-dom';
 import {
   Infinity as InfinityIcon,
   Sparkles,
+  Square,
   Users,
   Leaf,
   Plus,
@@ -54,6 +55,17 @@ import {
 import { Progress } from '@/components/ui/progress';
 import CityCanvas from './CityCanvas';
 import DesignPreview from './DesignPreview';
+import JourneyPanel from './JourneyPanel';
+import {
+  chapterOf,
+  journeyOf,
+  pathOf,
+  journeyAction,
+  journeyPrompt,
+  journeyCommand,
+  reconcileJourney,
+  type JourneyAction,
+} from './journey';
 import { buildDesign, designIntent } from './design-actions';
 import {
   initialState,
@@ -75,7 +87,7 @@ import {
   type Tile,
 } from './simulation';
 import { activity, feeling, profile } from './citizens';
-import { converse, type Speaker } from './conversation';
+import { converse, autoBuild, type Speaker } from './conversation';
 import { useVoice } from './useVoice';
 import { contextFor, residentProfile, validAIReply } from './ai-contract';
 import { applyAIReply } from './ai-actions';
@@ -91,6 +103,8 @@ const icons = {
   core: Sparkles,
 };
 type Modal =
+  | 'journey'
+  | 'moments'
   | 'design'
   | 'people'
   | 'council'
@@ -127,13 +141,15 @@ export default function Home() {
     [speaker, setSpeaker] = useState<Speaker>('aura'),
     [input, setInput] = useState(''),
     [search, setSearch] = useState(''),
+    [seenMoment, setSeenMoment] = useState(''),
+    [storyCamera, setStoryCamera] = useState(false),
     [focusTile, setFocusTile] = useState<{ x: number; y: number } | null>(null),
     [message, setMessage] = useState(''),
     [saveStatus, setSaveStatus] = useState('Saved on this device'),
     [messages, setMessages] = useState<Message[]>([
       {
         speaker: 'aura',
-        text: 'Welcome to NOVA. I take care of everything you need. What you want is up to you. Shall we make room for a few more dreams?',
+        text: 'Welcome, Mayor. I provide the essentials; you make room for shared life. Mira has a little unfinished song and an invitation for you. Tap Meet Mira, or say “What should I do first?”',
         day: 1,
       },
     ]);
@@ -142,6 +158,9 @@ export default function Home() {
     topicRef = useRef(''),
     undoRef = useRef<Tile[][]>([]),
     inputRef = useRef<HTMLInputElement>(null),
+    historyRef = useRef<HTMLDivElement>(null),
+    journeyTitleRef = useRef<HTMLHeadingElement>(null),
+    dialogRef = useRef<HTMLDivElement>(null),
     submitRef = useRef<(t: string) => Promise<void>>(() => Promise.resolve());
   useEffect(() => {
     stateRef.current = state;
@@ -165,13 +184,23 @@ export default function Home() {
       aiAbort.current?.abort();
     };
   }, []);
-  const event = pendingEvent(state),
+  const journey = journeyOf(state),
+    chapter = chapterOf(state),
+    invitation = journeyPrompt(state);
+  useEffect(() => {
+    if (modal !== 'journey') return;
+    journeyTitleRef.current?.focus({ preventScroll: true });
+    if (dialogRef.current) dialogRef.current.scrollTop = 0;
+  }, [modal, journey.chapter, journey.phase]);
+  const guidingFirst = journey.chapter === 0 && !journey.freePlay;
+  const event = guidingFirst ? -1 : pendingEvent(state),
     selected = state.tiles.find(
       (t) => t.x === focusTile?.x && t.y === focusTile?.y,
     ),
     goals = milestones(state),
     latest = messages[messages.length - 1];
   const commit = useCallback((s: State) => {
+    s = reconcileJourney(stateRef.current, s);
     const completed = !s.won && milestones(s).every((g) => g.progress >= 1);
     const next = completed ? { ...s, won: true } : s;
     stateRef.current = next;
@@ -227,6 +256,70 @@ export default function Home() {
     setMessage(result.text);
     announce(result.text, 'aura', true);
   };
+  const openJourney = () => {
+    setShowBuild(false);
+    setMobileMenu(false);
+    setModal('journey');
+  };
+  const actJourney = (action: JourneyAction) => {
+    if (aiBusy.current) return;
+    const before = stateRef.current;
+    const next = journeyAction(before, action, selected);
+    if (next === before) {
+      setMessage('Choose a matching place before starting the gathering.');
+      return;
+    }
+    commit(next);
+    const j = journeyOf(next),
+      c = chapterOf(next);
+    if (action === 'explore') {
+      setModal(null);
+      return;
+    }
+    setShowBuild(false);
+    setMobileMenu(false);
+    setTool('inspect');
+    if (j.venue) {
+      setFocusTile(j.venue);
+      setStoryCamera(true);
+    }
+    setModal(action === 'use' || action === 'host' ? null : 'journey');
+    if (action === 'host')
+      setMessage('A gathering begins. Your city has a new memory.');
+    const reply =
+      action === 'host' && c
+        ? c.outcomes[j.agreement ?? 0] + ' ' + c.thanks
+        : journeyPrompt(next).text;
+    setSpeaker('aura');
+    speakerRef.current = 'aura';
+    announce(reply, 'aura', true);
+  };
+  const buildForJourney = () => {
+    if (aiBusy.current) return;
+    const before = stateRef.current,
+      path = pathOf(before);
+    if (!path || journeyOf(before).phase !== 'place') return;
+    const result = autoBuild(before, path.kind, 1);
+    if (!result.built) {
+      setMessage(
+        'There is no open plot. Use an existing place or rewild an unused plot.',
+      );
+      return;
+    }
+    pushUndo(before);
+    commit(result.state);
+    setFocusTile(result.state.tiles.at(-1) || null);
+    setStoryCamera(true);
+    setTool('inspect');
+    setShowBuild(false);
+    setModal(null);
+    setMessage('Your place is ready. Hear the neighbor to continue.');
+    announce(
+      'Your place is ready. Before the invitation goes out, another neighbor has a thought.',
+      'aura',
+      true,
+    );
+  };
   const submit = async (raw: string) => {
     if (aiBusy.current) return;
     const text = raw.trim().slice(0, 600);
@@ -235,6 +328,23 @@ export default function Home() {
     voice.clearError();
     setAiError('');
     const previous = stateRef.current;
+    const storyCommand = journeyCommand(previous, text);
+    if (storyCommand) {
+      setInput('');
+      if (storyCommand === 'open') {
+        openJourney();
+        announce(
+          'You are NOVA’s mayor. ' + journeyPrompt(previous).text,
+          'aura',
+          true,
+        );
+      } else if (storyCommand === 'memories') {
+        setSeenMoment(previous.moments?.[0]?.id || '');
+        setModal('moments');
+      } else if (storyCommand === 'build') buildForJourney();
+      else actJourney(storyCommand);
+      return;
+    }
     if (
       (previous.designProposal &&
         /^(please )?(build|create|make) it[.!]?$/i.test(text)) ||
@@ -432,7 +542,8 @@ export default function Home() {
       voice.listening ||
       thinking ||
       voice.transcribing ||
-      event >= 0
+      event >= 0 ||
+      (guidingFirst && journey.phase === 'invitation')
     )
       return;
     const timer = setInterval(() => {
@@ -446,6 +557,8 @@ export default function Home() {
     modal,
     resetOpen,
     event,
+    guidingFirst,
+    journey.phase,
     voice.listening,
     thinking,
     voice.transcribing,
@@ -465,6 +578,13 @@ export default function Home() {
       }
     }
   }, [paused, ready]);
+  useEffect(() => {
+    if (modal !== 'history') return;
+    const frame = requestAnimationFrame(() =>
+      historyRef.current?.lastElementChild?.scrollIntoView({ block: 'end' }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [modal, messages.length]);
   const listen = voice.listen;
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -582,6 +702,7 @@ export default function Home() {
     return () => lifecycle.abort();
   }, []);
   const onTile = (x: number, y: number) => {
+    setStoryCamera(false);
     setAiError('');
     if (!isLand(x, y)) {
       setMessage('The sea belongs to itself. Choose a tile on the island.');
@@ -616,6 +737,17 @@ export default function Home() {
     if (r.ok) {
       pushUndo(s);
       commit(r.state);
+      if (
+        journeyOf(s).phase === 'place' &&
+        journeyOf(stateRef.current).phase === 'neighbor'
+      ) {
+        setTool('inspect');
+        setShowBuild(false);
+        setGrid(false);
+        setStoryCamera(true);
+        setMessage('Your place is ready. Hear the neighbor to continue.');
+        return;
+      }
     }
     setMessage(r.message);
   };
@@ -666,6 +798,24 @@ export default function Home() {
           />
         </div>
       ))}
+      <div className="next-city-goal">
+        <b>
+          {state.won ? 'First charter reached' : 'Your next city milestone'}
+        </b>
+        <p>
+          {state.won
+            ? 'Your city keeps its memories. New invitations are waiting.'
+            : goals.find((g) => g.progress < 1)?.text ||
+              'Let the city settle into its new possibilities.'}
+        </p>
+        {!state.won && goals.slice(0, 3).every((g) => g.progress >= 1) && (
+          <span>
+            {METRICS.filter((m) => state.stats[m.key] < 75)
+              .map((m) => `${m.label}: ${Math.round(state.stats[m.key])} / 75`)
+              .join(' · ')}
+          </span>
+        )}
+      </div>
       <p className="capacity">
         {counts(state).home * 48 - state.population} open homes ·{' '}
         {state.people.filter((p) => p.progress >= 100).length} dreams realized
@@ -732,14 +882,30 @@ export default function Home() {
           onZoom={setZoom}
           focusTile={focusTile}
         />
-        <div className="world-heading">
-          <span className="eyebrow">EARTH · ARCHIPELAGO 07</span>
-          <h2>
-            A different way
-            <br />
-            to be alive.
-          </h2>
-          <p>No jobs. No scarcity. A world of possibility.</p>
+        <div className="mayor-brief">
+          <span className="eyebrow">YOU ARE THE MAYOR · {invitation.step}</span>
+          <h2>{invitation.title}</h2>
+          <p>{invitation.text}</p>
+          <button className="brief-action" onClick={openJourney}>
+            {invitation.action}
+            <ArrowUpRight size={16} />
+          </button>
+          <button
+            className={
+              'brief-memories' +
+              (state.moments?.[0]?.id && state.moments[0].id !== seenMoment
+                ? ' unread'
+                : '')
+            }
+            onClick={() => {
+              setSeenMoment(state.moments?.[0]?.id || '');
+              setModal('moments');
+            }}
+          >
+            <Sparkles size={14} />
+            {state.moments?.[0]?.title || 'Your city’s memories'}
+            {state.moments?.length ? ` · ${state.moments.length}` : ''}
+          </button>
         </div>
         <div className="coordinate">
           NOVA ISLAND <span>38° N / 24° E</span>
@@ -772,7 +938,11 @@ export default function Home() {
             </p>
           </div>
         </aside>
-        <button className="mobile-stats" onClick={() => setModal('stats')}>
+        <button
+          className="mobile-stats"
+          aria-label="City life and current goals"
+          onClick={() => setModal('stats')}
+        >
           <Users size={15} />
           {state.population}
           <span />
@@ -820,7 +990,7 @@ export default function Home() {
             <ArrowUpRight size={18} />
           </button>
         )}
-        {selected && tool === 'inspect' && (
+        {selected && tool === 'inspect' && !storyCamera && (
           <div className="inspect-card">
             <button
               className="close-inspect"
@@ -837,6 +1007,13 @@ export default function Home() {
               {selected.design?.description || BUILDINGS[selected.kind].text}
             </p>
             <span>{BUILDINGS[selected.kind].impact}</span>
+            {journey.phase === 'neighbor' &&
+              journey.venue?.x === selected.x &&
+              journey.venue?.y === selected.y && (
+                <button className="primary-action" onClick={openJourney}>
+                  Continue the invitation <ArrowUpRight size={16} />
+                </button>
+              )}
             {selected.kind !== 'core' && (
               <button
                 className="design-inline"
@@ -874,11 +1051,13 @@ export default function Home() {
         )}
         {message && <output className="status-message">{message}</output>}
         <div className="world-hint">
-          {paused
-            ? 'Time is paused'
-            : event >= 0
-              ? 'Time is waiting for the council'
-              : 'Drag to explore · Pinch or scroll to zoom'}
+          {guidingFirst && journey.phase === 'invitation'
+            ? 'Meet Mira, or choose to explore freely'
+            : paused
+              ? 'Time is paused'
+              : event >= 0
+                ? 'Time is waiting for the council'
+                : 'Drag to explore · Pinch or scroll to zoom'}
         </div>
       </section>
       <section
@@ -1096,6 +1275,21 @@ export default function Home() {
               <Palette />
               <span>Design</span>
             </button>
+            <button aria-label="Your next invitation" onClick={openJourney}>
+              <Sparkles />
+              <span>Invitation</span>
+            </button>
+            <button
+              aria-label="City memories"
+              onClick={() => {
+                setMobileMenu(false);
+                setSeenMoment(state.moments?.[0]?.id || '');
+                setModal('moments');
+              }}
+            >
+              <Archive />
+              <span>Memories</span>
+            </button>
           </div>
         </div>
         <output
@@ -1218,6 +1412,8 @@ export default function Home() {
         }}
       >
         <DialogContent
+          ref={dialogRef}
+          initialFocus={modal === 'journey' ? journeyTitleRef : undefined}
           finalFocus={mobileWriting ? inputRef : undefined}
           className={
             'nova-dialog ' +
@@ -1230,41 +1426,145 @@ export default function Home() {
         >
           <DialogHeader>
             <span className="eyebrow">NOVA · LIFE AFTER WORK</span>
-            <DialogTitle>
-              {modal === 'design'
-                ? 'Imagine a place.'
-                : modal === 'people'
-                  ? 'Everyone is a whole world.'
-                  : modal === 'council'
-                    ? event >= 0
-                      ? EVENTS[event].title
-                      : 'Our unfolding story'
-                    : modal === 'story'
-                      ? 'Everything is solved. Life is not.'
-                      : modal === 'stats'
-                        ? 'A city is how people feel.'
-                        : modal === 'victory'
-                          ? 'This is what abundance can become.'
-                          : 'A conversation, not a command line.'}
+            <DialogTitle ref={journeyTitleRef} tabIndex={-1}>
+              {modal === 'journey'
+                ? chapter?.title || 'What happens next?'
+                : modal === 'moments'
+                  ? 'The life you made room for.'
+                  : modal === 'design'
+                    ? 'Imagine a place.'
+                    : modal === 'people'
+                      ? 'Everyone is a whole world.'
+                      : modal === 'council'
+                        ? event >= 0
+                          ? EVENTS[event].title
+                          : 'Our unfolding story'
+                        : modal === 'story'
+                          ? 'Everything is solved. Life is not.'
+                          : modal === 'stats'
+                            ? 'A city is how people feel.'
+                            : modal === 'victory'
+                              ? 'This is what abundance can become.'
+                              : 'Your conversation'}
             </DialogTitle>
             <DialogDescription>
-              {modal === 'design'
-                ? 'Describe it, shape it together, then bring it to life.'
-                : modal === 'people'
-                  ? `${state.population} people. ${state.population} different ways to be alive. Choose someone to talk to.`
-                  : modal === 'council'
-                    ? event >= 0
-                      ? EVENTS[event].lead
-                      : 'The choices we have made, and the possibilities ahead.'
-                    : modal === 'story'
-                      ? 'The year is 2186. Forty-one years ago, the last compulsory work shift ended.'
-                      : modal === 'stats'
-                        ? 'Provision is infinite. Attention, space and care still matter.'
-                        : modal === 'victory'
-                          ? 'You have created a city where people can flourish. There is no final perfect city. Keep listening.'
-                          : 'Your recent conversations in NOVA. Spoken and typed requests share the same world.'}
+              {modal === 'journey'
+                ? 'Shape the places. Listen to the people. Let a shared life unfold.'
+                : modal === 'moments'
+                  ? 'Personal milestones and shared occasions, remembered in this city.'
+                  : modal === 'design'
+                    ? 'Describe it, shape it together, then bring it to life.'
+                    : modal === 'people'
+                      ? `${state.population} people. ${state.population} different ways to be alive. Choose someone to talk to.`
+                      : modal === 'council'
+                        ? event >= 0
+                          ? EVENTS[event].lead
+                          : 'The choices we have made, and the possibilities ahead.'
+                        : modal === 'story'
+                          ? 'The year is 2186. Forty-one years ago, the last compulsory work shift ended.'
+                          : modal === 'stats'
+                            ? 'Provision is infinite. Attention, space and care still matter.'
+                            : modal === 'victory'
+                              ? 'You have created a city where people can flourish. There is no final perfect city. Keep listening.'
+                              : 'Your recent conversations in NOVA. Spoken and typed requests share the same world.'}
             </DialogDescription>
           </DialogHeader>
+          {modal === 'journey' && (
+            <JourneyPanel
+              state={state}
+              onAction={actJourney}
+              onBuild={buildForJourney}
+              onManual={() => {
+                const p = pathOf(state);
+                if (!p) return;
+                setTool(p.kind);
+                setGrid(true);
+                setModal(null);
+                setShowBuild(false);
+                setMessage(
+                  'Tap an open plot. Your invitation will continue when the place is built.',
+                );
+              }}
+              onVisit={() => {
+                if (journey.venue) setFocusTile(journey.venue);
+                setStoryCamera(true);
+                setModal(null);
+              }}
+              onPeople={() => setModal('people')}
+            />
+          )}
+          {modal === 'journey' && (
+            <div className="journey-voice">
+              <button
+                type="button"
+                className="secondary-action"
+                disabled={thinking || voice.transcribing}
+                onClick={voice.listen}
+                aria-pressed={voice.listening}
+              >
+                {voice.listening ? <Square size={16} /> : <Mic size={16} />}
+                {voice.listening ? 'Finish speaking' : 'Speak your choice'}
+              </button>
+              <p aria-live="polite">
+                {voice.error ||
+                  aiError ||
+                  (thinking
+                    ? 'Listening to your idea…'
+                    : voice.transcribing
+                      ? 'Turning your voice into words…'
+                      : voice.listening
+                        ? voice.interim || 'Listening…'
+                        : 'Or use the choices above. Your invitation stays saved.')}
+              </p>
+            </div>
+          )}
+          {modal === 'moments' && (
+            <div className="moments-book">
+              {!state.moments?.length && (
+                <>
+                  <p>
+                    Your first page is still unwritten. Help a neighbor turn an
+                    idea into a shared moment.
+                  </p>
+                  <button className="primary-action" onClick={openJourney}>
+                    Open your invitation <ArrowUpRight size={16} />
+                  </button>
+                </>
+              )}
+              {state.moments?.map((m) => (
+                <article key={m.id}>
+                  <small>
+                    DAY {m.day} · {profile(m.person).name}
+                  </small>
+                  <h3>{m.title}</h3>
+                  <p>{m.text}</p>
+                  {m.venue &&
+                    state.tiles.some(
+                      (t) =>
+                        t.x === m.venue?.x &&
+                        t.y === m.venue?.y &&
+                        t.kind === m.venue.kind,
+                    ) && (
+                      <button
+                        className="secondary-action"
+                        onClick={() => {
+                          setFocusTile(m.venue!);
+                          setModal(null);
+                        }}
+                      >
+                        Visit this place <ArrowUpRight size={16} />
+                      </button>
+                    )}
+                  <button
+                    className="journey-link"
+                    onClick={() => talk(m.person)}
+                  >
+                    Talk to {profile(m.person).name.split(' ')[0]}
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
           {modal === 'people' && (
             <>
               <button
@@ -1586,7 +1886,7 @@ export default function Home() {
             </div>
           )}
           {modal === 'history' && (
-            <div className="conversation-history">
+            <div className="conversation-history" ref={historyRef}>
               {messages.map((m, i) => (
                 <div
                   className={
@@ -1633,9 +1933,10 @@ export default function Home() {
             <div className="story-body">
               <p className="story-text">
                 Machines grow the food, make the energy and build the homes.
-                Nobody has to earn their right to exist. Your role is to make
-                room for what comes next: connection, discovery, a beautiful
-                afternoon.
+                Nobody has to earn their right to exist. You are the mayor of
+                NOVA. You shape shared places and agreements; residents choose
+                their own lives. Start with one person’s invitation, make a
+                place for it, and see what happens when people meet.
               </p>
               <h3>Your voice shapes the island</h3>
               <div className="command-examples">
