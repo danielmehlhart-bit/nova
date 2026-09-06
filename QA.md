@@ -91,3 +91,25 @@ Real in-app-browser clickthrough against the updated game, with responsive viewp
 | Deterministic tests, lint, typecheck, build | PASS | 23 game tests and authored-code checks; production build succeeds. |
 
 Dependencies were updated to the tested public versions; npm audit reports zero known vulnerabilities at this run. Public source was compared byte-for-byte after upload. No API key, local environment file or private hosting metadata is included in that checkout. Physical iOS/Android microphone capture, native keyboard behavior and speech playback still require a handset test. The first guided resident story and objective card remain planned in NEXT.md.
+
+## Resident-story iteration (6 September)
+
+Baseline: 15m46s of real play before editing; detailed observations in `playtests/2026-09-06-flow.md`. The original private/user saves were preserved using a separate test origin.
+
+| Scenario | Result |
+| --- | --- |
+| Mayor role and first actionable invitation | PASS in the revised entry |
+| Mira: create Agora, accommodate quiet listeners, host, open keepsake | PASS; saved one memory |
+| Optional melody controls | PASS for play/stop UI; physical audio listening not verified |
+| Juno: reuse a real Wonder Lab, choose requested assistance, host | PASS; no forced duplicate construction |
+| Ada: choose grove, manually place via map keyboard, decide through typed voice phrase, host | PASS; progression and automatic exit from placement mode |
+| Chapter completion, next invitation and three-memory recap | PASS |
+| Reload after milestones | PASS; chapter, choices and memories preserved |
+| World-first feedback | Fixed generic building inspection covering the new gathering |
+| Voice inside a story window | Added direct microphone control; physical microphone still unavailable in this test environment |
+| Deterministic validation | 27 tests pass, including all chapter/path/agreement combinations, duplicate reward prevention, removed venues, legacy saves, dream completion and command guards |
+| Small phone entry (320×568) | PASS after fixing automatic focus that scrolled past the mayor explanation; no horizontal page overflow |
+| Desktop (1280×900) | Fixed story card covering day/night and grid controls; controls now sit below the card |
+| Static / production validation | Lint, TypeScript and production build pass |
+
+These checks establish behavior in tested paths, not a guarantee of human enjoyment, retention or performance on physical phones. Graphics overhaul remains planned in NEXT.md.

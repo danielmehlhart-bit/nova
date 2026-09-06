@@ -26,6 +26,9 @@ The lint script checks authored game code and tests. Generated Shadcn components
 
 ## Playing
 
+You are NOVA’s mayor. Start with **Meet Mira** on the map, or say “What should I do first?”. Three invitations connect real places to shared experiences: Mira’s first listening, Juno’s imperfect table and Ada’s sky watch. Choose a setting, build or reuse a place, hear another perspective and host the gathering. Your choices become saved memories; actual resident dream completions also enter the memory book. The guided chapters use local game rules and do not require paid AI calls. Choose to explore freely whenever you prefer.
+
+
 On a phone, use Talk to speak English, Write to type, and Menu for Build, People, Council and Design. Tap the short reply to read the full conversation, then Continue conversation to answer. On desktop, the composer and city actions remain visible. Examples:
 
 - “Build two gardens near homes”
@@ -89,7 +92,7 @@ The city is stored only in this browser's localStorage, with validation on load 
 
 The UI uses React, Vinext, Canvas 2D and the scaffold's accessible dialog/progress primitives. It has no remote image or font dependencies. Motion respects the system's reduced-motion preference.
 
-Optional imperative WebMCP tools are registered when `document.modelContext` is available: `read_nova_city` and `give_nova_instruction`. The browser reports both tools registered. This QA pass used real clicks and keyboard input; WebMCP execution itself was not exercised. A real browser clickthrough and responsive UX iteration were performed; see QA.md for individual pass/fail results and remaining hardware/browser-engine limits. Build, type checking, authored-code lint and 23 deterministic tests pass.
+Optional imperative WebMCP tools are registered when `document.modelContext` is available: `read_nova_city` and `give_nova_instruction`. The browser reports both tools registered. This QA pass used real clicks and keyboard input; WebMCP execution itself was not exercised. A real browser clickthrough and responsive UX iteration were performed; see QA.md for individual pass/fail results and remaining hardware/browser-engine limits. Build, type checking, authored-code lint and 27 deterministic tests pass.
 
 ## Open development and costs
 

@@ -23,11 +23,24 @@ Priority order:
 
 This document records plans, not features already implemented. Preserve the working private game, existing saves and protected AI/voice setup. Do not interpret the future vision as an instruction to build every feature now. Publishing the source does not change access to the separately hosted prototype or configure paid services.
 
+## First playable story — implemented after the 15-minute baseline
+
+See `playtests/2026-09-06-flow.md` for the measured 15m46s baseline and observed failures. This is an agent playtest, not a human retention study.
+
+- The map now states **You are the mayor** and offers a persistent next action. Fresh cities wait for the first invitation or an explicit choice to explore before time/council prompts compete for attention.
+- Three short chapters: Mira’s first listening, Juno’s imperfect table and Ada’s shared sky watch. Choose a setting, create or reuse a real place, respond to another perspective, host a gathering and keep a personal memory.
+- Construction and hosting return to the city view. A small named gathering marker makes the event locatable; full graphical detail remains deferred.
+- Gathering choices produce different authored memories and resident recollections. Actual dream completions also enter the memory book, once per dream. Mira’s optional short musical sketch uses device audio.
+- Core chapter actions work locally through buttons or the shared voice/text command channel. Story windows include a microphone action. Free AI receives the real chapter/memory context and the explicit mayor role; conversations alone must not invent completed events.
+- The next city-wide goal explains what is still missing, including individual quality measures. Conversation history opens at the latest message.
+
+Next: have a human play this opening without explanation. Observe the first action, one emotional connection, understanding of a choice, and whether the next invitation feels worth pursuing. Adjust pacing from that evidence; three authored invitations are a small first slice, not a finished long-term retention system. Add more visible consequences in the later art pass before expanding content volume.
+
 ## Mobile interface — first slice implemented; handset validation next
 
 Player report: the AURA/conversation area occupies nearly half of the smartphone screen. The city is difficult to see and interact with.
 
-Implemented on 6 September: a 111px collapsed Talk / Write / Menu dock, one-line reply preview, dismissible conversation sheet with a direct reply action, contextual build palette, preserved drafts, visible active/error states and larger touch targets. Responsive clickthrough passes at 320px and 390px, reduced height, landscape and desktop; see QA.md. A guided objective card, automatic story progression and physical handset validation are still pending.
+Implemented on 6 September: a 111px collapsed Talk / Write / Menu dock, one-line reply preview, dismissible conversation sheet with a direct reply action, contextual build palette, preserved drafts, visible active/error states and larger touch targets. Responsive clickthrough passes at 320px and 390px, reduced height, landscape and desktop; see QA.md. A guided next-action card and three playable invitations now follow this slice; physical handset validation remains pending.
 
 Proposed first implementation slice:
 - Collapse AURA into a narrow bottom dock with a large microphone action, a way to type, and an expandable conversation/menu control. Show at most one short reply preview while collapsed.
